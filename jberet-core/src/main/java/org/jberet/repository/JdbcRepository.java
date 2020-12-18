@@ -311,13 +311,16 @@ public final class JdbcRepository extends AbstractPersistentRepository {
         PreparedStatement preparedStatement = null;
         try {
             preparedStatement = isOracle ? connection.prepareStatement(insert, idIndexInOracle) :
-                    connection.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setString(1, jobInstance.getJobName());
-            preparedStatement.setString(2, jobInstance.getApplicationName());
+                    //connection.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
+                    connection.prepareStatement(insert);
+            long id = getSequence(connection, "JOBINSTANCEID");
+            preparedStatement.setLong(1, id);
+            preparedStatement.setString(2, jobInstance.getJobName());
+            preparedStatement.setString(3, jobInstance.getApplicationName());
             preparedStatement.executeUpdate();
-            rs = preparedStatement.getGeneratedKeys();
-            rs.next();
-            jobInstance.setId(rs.getLong(1));
+            //rs = preparedStatement.getGeneratedKeys();
+            //rs.next();
+            jobInstance.setId(id);
             BatchLogger.LOGGER.persisted(jobInstance, jobInstance.getInstanceId());
         } catch (final Exception e) {
             throw BatchMessages.MESSAGES.failToRunQuery(e, insert);
@@ -427,6 +430,21 @@ public final class JdbcRepository extends AbstractPersistentRepository {
         return count;
     }
 
+    long getSequence(Connection connection, String sequencename) {
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT NEXTSEQUENCE(?) FROM DUAL");
+            preparedStatement.setString(1, sequencename);
+            ResultSet rs = preparedStatement.executeQuery();
+            rs.next();
+            return rs.getLong(1);
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return -1;
+        }
+
+    }
+
     @Override
     void insertJobExecution(final JobExecutionImpl jobExecution) {
         final String insert = sqls.getProperty(INSERT_JOB_EXECUTION);
@@ -435,15 +453,18 @@ public final class JdbcRepository extends AbstractPersistentRepository {
         PreparedStatement preparedStatement = null;
         try {
             preparedStatement = isOracle ? connection.prepareStatement(insert, idIndexInOracle) :
-                    connection.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setLong(1, jobExecution.getJobInstance().getInstanceId());
-            preparedStatement.setTimestamp(2, createTimestamp(jobExecution.getCreateTime()));
-            preparedStatement.setString(3, jobExecution.getBatchStatus().name());
-            preparedStatement.setString(4, BatchUtil.propertiesToString(jobExecution.getJobParameters()));
+                    connection.prepareStatement(insert);
+                    //connection.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
+            long id = getSequence(connection, "JOBEXECUTIONID");
+            preparedStatement.setLong(1, id);
+            preparedStatement.setLong(2, jobExecution.getJobInstance().getInstanceId());
+            preparedStatement.setTimestamp(3, createTimestamp(jobExecution.getCreateTime()));
+            preparedStatement.setString(4, jobExecution.getBatchStatus().name());
+            preparedStatement.setString(5, BatchUtil.propertiesToString(jobExecution.getJobParameters()));
             preparedStatement.executeUpdate();
-            rs = preparedStatement.getGeneratedKeys();
-            rs.next();
-            jobExecution.setId(rs.getLong(1));
+            //rs = preparedStatement.getGeneratedKeys();
+            //rs.next();
+            jobExecution.setId(id);
             BatchLogger.LOGGER.persisted(jobExecution, jobExecution.getExecutionId());
         } catch (final Exception e) {
             throw BatchMessages.MESSAGES.failToRunQuery(e, insert);
@@ -670,15 +691,19 @@ public final class JdbcRepository extends AbstractPersistentRepository {
         PreparedStatement preparedStatement = null;
         try {
             preparedStatement = isOracle ? connection.prepareStatement(insert, idIndexInOracle) :
-                    connection.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
-            preparedStatement.setLong(1, jobExecution.getExecutionId());
-            preparedStatement.setString(2, stepExecution.getStepName());
-            preparedStatement.setTimestamp(3, new Timestamp(stepExecution.getStartTime().getTime()));
-            preparedStatement.setString(4, stepExecution.getBatchStatus().name());
+                    connection.prepareStatement(insert);
+                    //connection.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS);
+            long id = getSequence(connection, "STEPEXECUTIONID");
+            preparedStatement.setLong(1, id);
+            preparedStatement.setLong(2, jobExecution.getExecutionId());
+            preparedStatement.setString(3, stepExecution.getStepName());
+            preparedStatement.setTimestamp(4, new Timestamp(stepExecution.getStartTime().getTime()));
+            preparedStatement.setString(5, stepExecution.getBatchStatus().name());
             preparedStatement.executeUpdate();
-            rs = preparedStatement.getGeneratedKeys();
-            rs.next();
-            stepExecution.setId(rs.getLong(1));
+            //rs = preparedStatement.getGeneratedKeys();
+            //rs.next();
+            //stepExecution.setId(rs.getLong(1));
+            stepExecution.setId(id);
             BatchLogger.LOGGER.persisted(stepExecution, stepExecution.getStepExecutionId());
         } catch (final Exception e) {
             throw BatchMessages.MESSAGES.failToRunQuery(e, insert);
